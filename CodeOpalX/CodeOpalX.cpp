@@ -5,6 +5,8 @@
 #include "CodeOpalX.h"
 
 #define MAX_LOADSTRING 100
+#define SCREEN_WIDTH   800 /*1680*/
+#define SCREEN_HEIGHT  600 /*1050*/
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -106,7 +108,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hInstance		= hInstance;
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)COLOR_WINDOW;
 	wcex.lpszClassName	= szWindowClass;
 
 	return RegisterClassEx(&wcex);
@@ -127,15 +128,25 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd;
 
    hInst = hInstance; // Store instance handle in our global variable
+   RECT wr = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 
-   hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+   hWnd = CreateWindowEx(
+	   NULL,
+	   szWindowClass, 
+	   szTitle, 
+	   WS_OVERLAPPEDWINDOW,
+	   300, 300,
+	   wr.right - wr.left, wr.bottom - wr.top,
+	   NULL,
+	   NULL,
+	   hInstance,
+	   NULL);
 
    if (!hWnd)
    {
       return FALSE;
    }
-
+   
    InitD3D(hWnd);
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
@@ -176,15 +187,18 @@ void InitD3D(HWND hWnd)
 
      // fill the swap chain description struct
      scd.BufferCount = 1;                                    // one back buffer
+	 scd.BufferDesc.Width = SCREEN_WIDTH;
+	 scd.BufferDesc.Height = SCREEN_HEIGHT;
      scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;     // use 32-bit color
      scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;      // how swap chain is to be used
      scd.OutputWindow = hWnd;                                // the window to be used
      scd.SampleDesc.Count = 4;                               // how many multisamples
      scd.Windowed = TRUE;                                    // windowed/full-screen mode
+	 scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
      // create a device, device context and swap chain using the information in the scd struct
      D3D11CreateDeviceAndSwapChain(NULL,
-                                   D3D_DRIVER_TYPE_HARDWARE,
+								   D3D_DRIVER_TYPE_HARDWARE,
                                    NULL,
                                    NULL,
                                    NULL,
@@ -208,13 +222,15 @@ void InitD3D(HWND hWnd)
 	 ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 	 viewport.TopLeftX = 0;
 	 viewport.TopLeftY = 0;
-	 viewport.Width = 800;
-	 viewport.Height = 600;
+	 viewport.Width = SCREEN_WIDTH;
+	 viewport.Height = SCREEN_HEIGHT;
 	 devcon->RSSetViewports(1, &viewport);
  }
 
 void CleanD3D()
 {
+	swapchain->SetFullscreenState(FALSE, NULL);
+
      // close and release all existing COM objects
      swapchain->Release();
 	 backbuffer->Release();
